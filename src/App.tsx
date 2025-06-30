@@ -18,6 +18,7 @@ import { ResponsiveLayout } from './components/ResponsiveLayout';
 import { AuthModal } from './components/auth/AuthModal';
 import { LandingPage } from './components/LandingPage';
 import { ChallengesManager } from './components/challenges/ChallengesManager';
+import { SettingsManager } from './components/settings/SettingsManager';
 
 // Hooks & Services
 import { useExpenses } from './hooks/useExpenses';
@@ -211,12 +212,7 @@ function AppContent() {
         return <ChallengesManager />;
 
       case 'settings':
-        return (
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Cài đặt</h1>
-            <p className="text-gray-600">Tính năng đang được phát triển...</p>
-          </div>
-        );
+        return <SettingsManager />;
 
       default:
         return null;
