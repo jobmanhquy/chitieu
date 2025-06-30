@@ -10,14 +10,36 @@ export class GeminiAIService {
   private model: any;
 
   private constructor() {
-    // Initialize Gemini AI with Firebase API key
-    this.genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAy1seVRiDSIn_pXQy1xxDwc5N8puqeK1Y');
+    // Get API key from environment variables
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('Gemini API key not found in environment variables');
+      throw new Error('Gemini API key is required');
+    }
+
+    // Initialize Gemini AI
+    this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
   }
 
   public static getInstance(): GeminiAIService {
     if (!GeminiAIService.instance) {
-      GeminiAIService.instance = new GeminiAIService();
+      try {
+        GeminiAIService.instance = new GeminiAIService();
+      } catch (error) {
+        console.error('Failed to initialize Gemini AI service:', error);
+        // Return a mock instance for development
+        return {
+          analyzeExpenses: async () => ({
+            insights: [],
+            patterns: [],
+            recommendations: [],
+            monthlyPrediction: { totalAmount: 0, confidence: 0, breakdown: [] },
+            riskFactors: { overspending: false, unusualPatterns: [], budgetExceeded: [] }
+          })
+        } as any;
+      }
     }
     return GeminiAIService.instance;
   }
