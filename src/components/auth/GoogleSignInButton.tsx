@@ -14,6 +14,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onSucces
       onSuccess?.();
     } catch (error) {
       // Error is handled in AuthContext
+      console.error('Google sign in error:', error);
     }
   };
 

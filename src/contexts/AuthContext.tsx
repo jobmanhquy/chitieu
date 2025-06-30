@@ -50,32 +50,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Create or update user document in Firestore
   const createUserDocument = async (firebaseUser: FirebaseUser) => {
-    const userRef = doc(db, 'users', firebaseUser.uid);
-    const userSnap = await getDoc(userRef);
+    try {
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        emailVerified: firebaseUser.emailVerified,
-        createdAt: new Date(),
-        lastLoginAt: new Date(),
-        preferences: {
-          theme: 'system',
-          currency: 'VND',
-          language: 'vi'
-        }
-      };
+      if (!userSnap.exists()) {
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified,
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
+          preferences: {
+            theme: 'system',
+            currency: 'VND',
+            language: 'vi'
+          }
+        };
 
-      await setDoc(userRef, userData);
-    } else {
-      // Update last login time
-      await updateDoc(userRef, {
-        lastLoginAt: new Date(),
-        emailVerified: firebaseUser.emailVerified
-      });
+        await setDoc(userRef, userData);
+      } else {
+        // Update last login time
+        await updateDoc(userRef, {
+          lastLoginAt: new Date(),
+          emailVerified: firebaseUser.emailVerified
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user document:', error);
     }
   };
 
@@ -144,9 +148,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await createUserDocument(firebaseUser);
       toast.success('Đăng nhập với Google thành công!');
     } catch (err: any) {
-      const errorMessage = getErrorMessage(err.code);
-      setError(errorMessage);
-      toast.error(errorMessage);
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        const errorMessage = getErrorMessage(err.code);
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -308,6 +314,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'Cửa sổ đăng nhập đã bị đóng';
       case 'auth/cancelled-popup-request':
         return 'Yêu cầu đăng nhập đã bị hủy';
+      case 'auth/invalid-credential':
+        return 'Thông tin đăng nhập không hợp lệ';
       default:
         return 'Đã xảy ra lỗi. Vui lòng thử lại';
     }
@@ -323,6 +331,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else {
           setUser(null);
         }
+        setError(null);
       } catch (err) {
         console.error('Auth state change error:', err);
         setError('Lỗi xác thực');

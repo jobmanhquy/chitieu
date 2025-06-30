@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
@@ -26,7 +26,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'emaillink'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signIn, signUp, resetPassword, signInWithEmailLink, loading } = useAuth();
+  const { signIn, signUp, resetPassword, signInWithEmailLink, loading, error } = useAuth();
 
   const {
     register,
@@ -66,6 +66,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     } catch (error) {
       // Error is handled in AuthContext
+      console.error('Auth error:', error);
     }
   };
 
@@ -102,7 +103,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl p-8 w-full max-w-md relative"
+        className="bg-white rounded-2xl p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto"
       >
         {/* Close Button */}
         <button
@@ -122,6 +123,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'emaillink' && 'Nhận link đăng nhập qua email'}
           </p>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
 
         {/* Google Sign In */}
         {(mode === 'signin' || mode === 'signup') && (

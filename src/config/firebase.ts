@@ -28,6 +28,11 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 
+// Set custom parameters for Google Auth
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 // Development emulators (uncomment for local development)
 // if (import.meta.env.DEV) {
 //   connectAuthEmulator(auth, 'http://localhost:9099');

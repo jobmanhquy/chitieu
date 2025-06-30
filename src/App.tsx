@@ -54,7 +54,15 @@ function AppContent() {
 
   // Nếu chưa đăng nhập, hiển thị Landing Page
   if (!user) {
-    return <LandingPage onGetStarted={() => setShowAuthModal(true)} />;
+    return (
+      <>
+        <LandingPage onGetStarted={() => setShowAuthModal(true)} />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
+      </>
+    );
   }
 
   const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -308,12 +316,6 @@ function AppContent() {
         onSubmit={editingExpense ? handleUpdateExpense : handleAddExpense}
         onCancel={handleFormCancel}
         editingExpense={editingExpense}
-      />
-
-      {/* Auth Modal for landing page */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
       />
     </ResponsiveLayout>
   );

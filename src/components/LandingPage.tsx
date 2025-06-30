@@ -11,7 +11,8 @@ import {
   ArrowRight,
   Star,
   Users,
-  TrendingUp
+  TrendingUp,
+  Play
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -73,6 +74,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     { number: '99.9%', label: 'Thời gian hoạt động' }
   ];
 
+  const handleGetStarted = () => {
+    console.log('Get Started clicked');
+    onGetStarted();
+  };
+
+  const handleDemo = () => {
+    // Scroll to features section
+    const featuresSection = document.getElementById('features-section');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Hero Section */}
@@ -106,16 +120,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={onGetStarted}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+                  onClick={handleGetStarted}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2 group"
                 >
                   <span>Bắt Đầu Miễn Phí</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 
-                <button className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 transition-all">
-                  Xem Demo
-                </button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleDemo}
+                  className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 transition-all flex items-center justify-center space-x-2 group"
+                >
+                  <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Xem Demo</span>
+                </motion.button>
               </div>
             </motion.div>
           </div>
@@ -150,16 +170,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section id="features-section" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Tính Năng Vượt Trội
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Công nghệ AI tiên tiến kết hợp với thiết kế hiện đại, 
-              mang đến trải nghiệm quản lý tài chính tốt nhất.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Tính Năng Vượt Trội
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Công nghệ AI tiên tiến kết hợp với thiết kế hiện đại, 
+                mang đến trải nghiệm quản lý tài chính tốt nhất.
+              </p>
+            </motion.div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -167,9 +194,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all"
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all cursor-pointer"
               >
                 <div className={`w-16 h-16 bg-gradient-to-r ${feature.color} rounded-2xl flex items-center justify-center mb-6`}>
                   <feature.icon className="w-8 h-8 text-white" />
@@ -192,7 +221,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
                 Tại Sao Chọn Chi Tiêu AI?
               </h2>
@@ -202,8 +236,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
+                    viewport={{ once: true }}
                     className="flex items-center space-x-3"
                   >
                     <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
@@ -211,9 +246,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
               <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl p-8">
                 <div className="flex items-center space-x-4 mb-6">
                   <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -232,18 +273,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       <span>85% ngân sách</span>
                     </div>
                     <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
-                      <div className="bg-green-400 h-2 rounded-full w-4/5"></div>
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: '85%' }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                        viewport={{ once: true }}
+                        className="bg-green-400 h-2 rounded-full"
+                      />
                     </div>
                   </div>
                   
-                  <div className="bg-white bg-opacity-10 rounded-lg p-3">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    viewport={{ once: true }}
+                    className="bg-white bg-opacity-10 rounded-lg p-3"
+                  >
                     <div className="text-white text-sm">
                       💡 AI khuyến nghị: Giảm 15% chi tiêu ăn uống để đạt mục tiêu tiết kiệm
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -251,33 +304,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       {/* CTA Section */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Sẵn Sàng Kiểm Soát Tài Chính?
-          </h2>
-          
-          <p className="text-xl text-gray-600 mb-8">
-            Tham gia cùng hàng nghìn người dùng đã thay đổi thói quen chi tiêu 
-            và đạt được mục tiêu tài chính với AI.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onGetStarted}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2"
-            >
-              <span>Đăng Ký Miễn Phí</span>
-              <ArrowRight className="w-5 h-5" />
-            </motion.button>
-          </div>
-          
-          <div className="flex items-center justify-center space-x-1 text-yellow-500">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-5 h-5 fill-current" />
-            ))}
-            <span className="ml-2 text-gray-600">4.9/5 từ 1,000+ đánh giá</span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              Sẵn Sàng Kiểm Soát Tài Chính?
+            </h2>
+            
+            <p className="text-xl text-gray-600 mb-8">
+              Tham gia cùng hàng nghìn người dùng đã thay đổi thói quen chi tiêu 
+              và đạt được mục tiêu tài chính với AI.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleGetStarted}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2 group"
+              >
+                <span>Đăng Ký Miễn Phí</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+            </div>
+            
+            <div className="flex items-center justify-center space-x-1 text-yellow-500">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-current" />
+              ))}
+              <span className="ml-2 text-gray-600">4.9/5 từ 1,000+ đánh giá</span>
+            </div>
+          </motion.div>
         </div>
       </section>
 
