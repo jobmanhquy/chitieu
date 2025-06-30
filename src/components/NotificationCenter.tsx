@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, AlertTriangle, Info, CheckCircle, TrendingUp, Target } from 'lucide-react';
+import { Bell, X, AlertTriangle, Info, CheckCircle, TrendingUp, Target, Users, Mail } from 'lucide-react';
 import { useExpenses } from '../hooks/useExpenses';
 import { formatCurrency } from '../utils/currency';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface Notification {
   id: string;
-  type: 'warning' | 'info' | 'success' | 'budget' | 'goal';
+  type: 'warning' | 'info' | 'success' | 'budget' | 'goal' | 'group' | 'invitation';
   title: string;
   message: string;
   timestamp: Date;
   isRead: boolean;
   actionable?: boolean;
   action?: () => void;
+  data?: any;
 }
 
 interface NotificationCenterProps {
@@ -90,6 +91,49 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
       isRead: false
     });
 
+    // Group invitation notification
+    newNotifications.push({
+      id: 'group-invitation',
+      type: 'invitation',
+      title: 'Lời mời tham gia nhóm',
+      message: 'Nguyễn Văn A đã mời bạn tham gia nhóm "Gia đình Nguyễn"',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      isRead: false,
+      actionable: true,
+      data: {
+        groupName: 'Gia đình Nguyễn',
+        inviterName: 'Nguyễn Văn A'
+      }
+    });
+
+    // Group expense notification
+    newNotifications.push({
+      id: 'group-expense',
+      type: 'group',
+      title: 'Chi tiêu nhóm mới',
+      message: 'Trần Thị B đã thêm chi tiêu "Ăn trưa" - 150,000₫ trong nhóm "Bạn bè"',
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+      isRead: false,
+      actionable: true,
+      data: {
+        groupName: 'Bạn bè',
+        memberName: 'Trần Thị B',
+        amount: 150000,
+        description: 'Ăn trưa'
+      }
+    });
+
+    // AI insight notification
+    newNotifications.push({
+      id: 'ai-insight',
+      type: 'info',
+      title: 'AI Insight mới',
+      message: 'Gemini AI phát hiện bạn chi tiêu cho ăn uống tăng 25% so với tháng trước.',
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+      isRead: false,
+      actionable: true
+    });
+
     setNotifications(newNotifications);
   };
 
@@ -107,6 +151,18 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
     );
   };
 
+  const handleNotificationAction = (notification: Notification) => {
+    markAsRead(notification.id);
+    
+    if (notification.type === 'invitation') {
+      // Handle group invitation
+      console.log('Handle group invitation:', notification.data);
+    } else if (notification.type === 'group') {
+      // Handle group expense
+      console.log('Handle group expense:', notification.data);
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'warning': return AlertTriangle;
@@ -114,6 +170,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
       case 'success': return CheckCircle;
       case 'budget': return TrendingUp;
       case 'goal': return Target;
+      case 'group': return Users;
+      case 'invitation': return Mail;
       default: return Info;
     }
   };
@@ -125,6 +183,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
       case 'success': return 'text-green-600 bg-green-100';
       case 'budget': return 'text-red-600 bg-red-100';
       case 'goal': return 'text-purple-600 bg-purple-100';
+      case 'group': return 'text-indigo-600 bg-indigo-100';
+      case 'invitation': return 'text-pink-600 bg-pink-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -200,7 +260,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                           ? 'bg-gray-50 border-gray-200' 
                           : 'bg-white border-gray-300 shadow-sm'
                       }`}
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => {
+                        if (notification.actionable) {
+                          handleNotificationAction(notification);
+                        } else {
+                          markAsRead(notification.id);
+                        }
+                      }}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`p-2 rounded-full ${colorClass}`}>
@@ -223,6 +289,45 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                               minute: '2-digit'
                             })}
                           </p>
+
+                          {/* Special handling for group invitations */}
+                          {notification.type === 'invitation' && notification.actionable && (
+                            <div className="mt-3 flex space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                                className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                              >
+                                Từ chối
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotificationAction(notification);
+                                }}
+                                className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                Chấp nhận
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Special handling for group expenses */}
+                          {notification.type === 'group' && notification.actionable && (
+                            <div className="mt-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotificationAction(notification);
+                                }}
+                                className="w-full bg-indigo-50 text-indigo-600 py-2 px-3 rounded-lg hover:bg-indigo-100 transition-colors text-sm"
+                              >
+                                Xem chi tiết
+                              </button>
+                            </div>
+                          )}
                         </div>
                         {!notification.isRead && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
