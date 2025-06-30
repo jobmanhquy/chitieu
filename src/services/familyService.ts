@@ -20,7 +20,7 @@ export interface FamilyGroup {
   id: string;
   name: string;
   description?: string;
-  adminId: string;
+  createdBy: string;
   members: FamilyMember[];
   invitations: FamilyInvitation[];
   settings: FamilySettings;
@@ -85,7 +85,7 @@ export class FamilyService {
   }
 
   // Create a new family group
-  async createFamily(name: string, description?: string, adminId?: string): Promise<string> {
+  async createFamily(name: string, description?: string, createdBy?: string): Promise<string> {
     try {
       const defaultSettings: FamilySettings = {
         allowMemberInvites: true,
@@ -116,9 +116,9 @@ export class FamilyService {
       const familyData: Omit<FamilyGroup, 'id'> = {
         name,
         description,
-        adminId: adminId || '',
+        createdBy: createdBy || '',
         members: [{
-          userId: adminId || '',
+          userId: createdBy || '',
           email: '',
           displayName: '',
           role: 'admin',
