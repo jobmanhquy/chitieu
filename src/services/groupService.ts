@@ -162,6 +162,7 @@ export class GroupService {
         }))
       });
 
+      console.log('Group created successfully:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('Error creating group:', error);
@@ -169,7 +170,7 @@ export class GroupService {
     }
   }
 
-  // Invite a member to group
+  // Invite a member to group - REAL implementation
   async inviteMember(
     groupId: string, 
     email: string, 
@@ -177,6 +178,22 @@ export class GroupService {
     invitedBy: string
   ): Promise<void> {
     try {
+      // Get group details first
+      const groupDoc = await getDocs(query(collection(db, 'groups'), where('__name__', '==', groupId)));
+      if (groupDoc.empty) {
+        throw new Error('Group not found');
+      }
+
+      const groupData = groupDoc.docs[0].data() as Group;
+      
+      // Get inviter details
+      const inviterDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', invitedBy)));
+      let inviterName = 'Người dùng';
+      if (!inviterDoc.empty) {
+        const inviterData = inviterDoc.docs[0].data();
+        inviterName = inviterData.displayName || inviterData.email || 'Người dùng';
+      }
+
       const invitation: GroupInvitation = {
         id: Date.now().toString(),
         email,
@@ -187,6 +204,7 @@ export class GroupService {
         status: 'pending'
       };
 
+      // Update group with invitation
       const groupRef = doc(db, 'groups', groupId);
       await updateDoc(groupRef, {
         invitations: arrayUnion({
@@ -200,21 +218,21 @@ export class GroupService {
       // Create notification for the invited user
       await this.notificationService.createGroupInvitationNotification(
         email,
-        'Nhóm', // Would get actual group name
-        'family', // Would get actual group type
-        'Người mời', // Would get actual inviter name
+        groupData.name,
+        groupData.type,
+        inviterName,
         groupId,
         invitation.id
       );
 
-      console.log(`Invitation sent to ${email} for group ${groupId}`);
+      console.log(`Real invitation sent to ${email} for group ${groupId}`);
     } catch (error) {
       console.error('Error inviting member:', error);
       throw error;
     }
   }
 
-  // Accept invitation
+  // Accept invitation - REAL implementation
   async acceptInvitation(
     groupId: string, 
     invitationId: string, 
@@ -240,7 +258,7 @@ export class GroupService {
         userId,
         email: userEmail,
         displayName,
-        role: 'member', // Will be updated based on invitation
+        role: 'member',
         joinedAt: new Date(),
         permissions: memberPermissions,
         isActive: true
