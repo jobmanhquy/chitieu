@@ -38,10 +38,10 @@ export const useExpenses = () => {
     setError(null);
 
     try {
+      // Simplified query without complex ordering to avoid index issues
       const q = query(
         collection(db, 'expenses'),
         where('userId', '==', user.uid),
-        orderBy('date', 'desc'),
         limit(1000) // Limit for performance
       );
 
@@ -64,6 +64,9 @@ export const useExpenses = () => {
               });
             });
             
+            // Sort on client side to avoid index requirements
+            expensesData.sort((a, b) => b.date.getTime() - a.date.getTime());
+            
             console.log('Processed expenses:', expensesData.length);
             setExpenses(expensesData);
             setError(null);
@@ -83,7 +86,9 @@ export const useExpenses = () => {
           } else if (err.code === 'unavailable') {
             setError('Dịch vụ Firebase tạm thời không khả dụng. Vui lòng thử lại sau.');
           } else if (err.code === 'failed-precondition') {
-            setError('Cần tạo index cho truy vấn. Vui lòng kiểm tra Firebase Console.');
+            setError('Đang thiết lập cơ sở dữ liệu. Vui lòng thử lại sau ít phút.');
+          } else if (err.code === 'resource-exhausted') {
+            setError('Đã vượt quá giới hạn truy vấn. Vui lòng thử lại sau.');
           } else {
             setError(`Không thể tải dữ liệu chi tiêu: ${err.message}`);
           }
