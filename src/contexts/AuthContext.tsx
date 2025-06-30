@@ -71,15 +71,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         await setDoc(userRef, userData);
+        console.log('User document created successfully');
       } else {
         // Update last login time
         await updateDoc(userRef, {
           lastLoginAt: new Date(),
           emailVerified: firebaseUser.emailVerified
         });
+        console.log('User document updated successfully');
       }
     } catch (error) {
       console.error('Error creating user document:', error);
+      // Don't throw error here to prevent blocking authentication
+      // The app can still work without Firestore user document
     }
   };
 
@@ -89,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
 
+      console.log('Attempting to sign up user...');
       const { user: firebaseUser } = await createUserWithEmailAndPassword(
         auth,
         data.email,
@@ -105,6 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await createUserDocument(firebaseUser);
       toast.success('Tài khoản đã được tạo thành công!');
     } catch (err: any) {
+      console.error('Sign up error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -120,6 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
 
+      console.log('Attempting to sign in user...');
       const { user: firebaseUser } = await signInWithEmailAndPassword(
         auth,
         data.email,
@@ -129,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await createUserDocument(firebaseUser);
       toast.success('Đăng nhập thành công!');
     } catch (err: any) {
+      console.error('Sign in error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -144,10 +152,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       setLoading(true);
 
+      console.log('Attempting Google sign in...');
       const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
       await createUserDocument(firebaseUser);
       toast.success('Đăng nhập với Google thành công!');
     } catch (err: any) {
+      console.error('Google sign in error:', err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         const errorMessage = getErrorMessage(err.code);
         setError(errorMessage);
@@ -177,6 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       toast.success('Link đăng nhập đã được gửi đến email của bạn!');
     } catch (err: any) {
+      console.error('Email link sign in error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -206,6 +217,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return false;
     } catch (err: any) {
+      console.error('Complete email link sign in error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -220,6 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await firebaseSignOut(auth);
       toast.success('Đăng xuất thành công!');
     } catch (err: any) {
+      console.error('Sign out error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -234,6 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await sendPasswordResetEmail(auth, email);
       toast.success('Email đặt lại mật khẩu đã được gửi!');
     } catch (err: any) {
+      console.error('Reset password error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -258,6 +272,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         toast.success('Hồ sơ đã được cập nhật!');
       }
     } catch (err: any) {
+      console.error('Update profile error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -284,6 +299,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         toast.success('Tài khoản đã được xóa!');
       }
     } catch (err: any) {
+      console.error('Delete account error:', err);
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -316,6 +332,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'Yêu cầu đăng nhập đã bị hủy';
       case 'auth/invalid-credential':
         return 'Thông tin đăng nhập không hợp lệ';
+      case 'auth/operation-not-allowed':
+        return 'Phương thức đăng nhập này chưa được kích hoạt';
       default:
         return 'Đã xảy ra lỗi. Vui lòng thử lại';
     }
@@ -323,8 +341,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Auth state listener
   useEffect(() => {
+    console.log('Setting up auth state listener...');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
+        console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
         if (firebaseUser) {
           await createUserDocument(firebaseUser);
           setUser(convertFirebaseUser(firebaseUser));
