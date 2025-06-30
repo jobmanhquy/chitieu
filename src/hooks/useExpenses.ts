@@ -29,54 +29,75 @@ export const useExpenses = () => {
     if (!user) {
       setExpenses([]);
       setLoading(false);
+      setError(null);
       return;
     }
 
+    console.log('Setting up expenses listener for user:', user.uid);
     setLoading(true);
     setError(null);
 
-    const q = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid),
-      orderBy('date', 'desc'),
-      limit(1000) // Limit for performance
-    );
+    try {
+      const q = query(
+        collection(db, 'expenses'),
+        where('userId', '==', user.uid),
+        orderBy('date', 'desc'),
+        limit(1000) // Limit for performance
+      );
 
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        try {
-          const expensesData: Expense[] = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            expensesData.push({
-              id: doc.id,
-              amount: data.amount,
-              description: data.description,
-              category: data.category,
-              date: data.date.toDate(),
-              createdAt: data.createdAt.toDate(),
-              updatedAt: data.updatedAt.toDate(),
+      const unsubscribe = onSnapshot(
+        q,
+        (querySnapshot) => {
+          try {
+            console.log('Received expenses snapshot, size:', querySnapshot.size);
+            const expensesData: Expense[] = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              expensesData.push({
+                id: doc.id,
+                amount: data.amount,
+                description: data.description,
+                category: data.category,
+                date: data.date.toDate(),
+                createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt.toDate(),
+              });
             });
-          });
+            
+            console.log('Processed expenses:', expensesData.length);
+            setExpenses(expensesData);
+            setError(null);
+          } catch (err) {
+            console.error('Error processing expenses:', err);
+            setError('Lỗi xử lý dữ liệu chi tiêu');
+          } finally {
+            setLoading(false);
+          }
+        },
+        (err) => {
+          console.error('Error fetching expenses:', err);
           
-          setExpenses(expensesData);
-          setError(null);
-        } catch (err) {
-          console.error('Error processing expenses:', err);
-          setError('Lỗi xử lý dữ liệu chi tiêu');
-        } finally {
+          // More specific error messages
+          if (err.code === 'permission-denied') {
+            setError('Không có quyền truy cập dữ liệu. Vui lòng kiểm tra cấu hình Firestore Security Rules.');
+          } else if (err.code === 'unavailable') {
+            setError('Dịch vụ Firebase tạm thời không khả dụng. Vui lòng thử lại sau.');
+          } else if (err.code === 'failed-precondition') {
+            setError('Cần tạo index cho truy vấn. Vui lòng kiểm tra Firebase Console.');
+          } else {
+            setError(`Không thể tải dữ liệu chi tiêu: ${err.message}`);
+          }
+          
           setLoading(false);
         }
-      },
-      (err) => {
-        console.error('Error fetching expenses:', err);
-        setError('Không thể tải dữ liệu chi tiêu');
-        setLoading(false);
-      }
-    );
+      );
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (err: any) {
+      console.error('Error setting up expenses listener:', err);
+      setError(`Lỗi khởi tạo: ${err.message}`);
+      setLoading(false);
+    }
   }, [user]);
 
   // Add new expense
@@ -86,6 +107,7 @@ export const useExpenses = () => {
     }
 
     try {
+      console.log('Adding expense:', expenseData);
       const now = new Date();
       
       // Validate data
@@ -109,6 +131,7 @@ export const useExpenses = () => {
         updatedAt: Timestamp.fromDate(now),
       });
 
+      console.log('Expense added successfully:', docRef.id);
       toast.success('Đã thêm chi tiêu thành công!');
       return docRef.id;
     } catch (err: any) {
