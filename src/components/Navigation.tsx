@@ -11,12 +11,20 @@ import {
   X,
   User,
   LogIn,
-  Menu
+  Menu,
+  MessageCircle,
+  Scan,
+  Bell,
+  Users
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './auth/AuthModal';
 import { UserProfile } from './auth/UserProfile';
+import { SmartAssistant } from './SmartAssistant';
+import { ReceiptScanner } from './ReceiptScanner';
+import { NotificationCenter } from './NotificationCenter';
+import { FamilySharing } from './FamilySharing';
 
 interface NavigationProps {
   isOpen: boolean;
@@ -28,6 +36,10 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showSmartAssistant, setShowSmartAssistant] = useState(false);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showFamilySharing, setShowFamilySharing] = useState(false);
 
   const menuItems = [
     {
@@ -78,6 +90,41 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
       icon: Settings,
       color: 'text-gray-600',
       bgColor: 'bg-gray-50'
+    }
+  ];
+
+  const quickActions = [
+    {
+      id: 'ai-assistant',
+      label: 'AI Assistant',
+      icon: MessageCircle,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      action: () => setShowSmartAssistant(true)
+    },
+    {
+      id: 'scan-receipt',
+      label: 'Quét hóa đơn',
+      icon: Scan,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      action: () => setShowReceiptScanner(true)
+    },
+    {
+      id: 'notifications',
+      label: 'Thông báo',
+      icon: Bell,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      action: () => setShowNotifications(true)
+    },
+    {
+      id: 'family',
+      label: 'Gia đình',
+      icon: Users,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      action: () => setShowFamilySharing(true)
     }
   ];
 
@@ -141,7 +188,32 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <nav className="p-4 space-y-2">
+        {/* Quick Actions */}
+        {user && (
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 mb-3">Tính năng nhanh</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                
+                return (
+                  <motion.button
+                    key={action.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={action.action}
+                    className={`flex flex-col items-center space-y-1 p-3 rounded-xl transition-all hover:shadow-sm ${action.bgColor}`}
+                  >
+                    <Icon className={`w-5 h-5 ${action.color}`} />
+                    <span className="text-xs font-medium text-gray-700">{action.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
@@ -166,7 +238,7 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* User Profile Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleUserClick}
             className="w-full flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl hover:from-blue-100 hover:to-purple-100 transition-all"
@@ -196,16 +268,35 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
         </div>
       </motion.div>
 
-      {/* Auth Modal */}
+      {/* Modals */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
 
-      {/* User Profile Modal */}
       <UserProfile
         isOpen={showUserProfile}
         onClose={() => setShowUserProfile(false)}
+      />
+
+      <SmartAssistant
+        isOpen={showSmartAssistant}
+        onClose={() => setShowSmartAssistant(false)}
+      />
+
+      <ReceiptScanner
+        isOpen={showReceiptScanner}
+        onClose={() => setShowReceiptScanner(false)}
+      />
+
+      <NotificationCenter
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+
+      <FamilySharing
+        isOpen={showFamilySharing}
+        onClose={() => setShowFamilySharing(false)}
       />
     </>
   );
