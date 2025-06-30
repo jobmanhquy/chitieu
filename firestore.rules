@@ -19,5 +19,44 @@ service cloud.firestore {
       allow list: if request.auth != null && 
         request.auth.uid in resource.data.userId;
     }
+    
+    // Family sharing rules
+    match /families/{familyId} {
+      // Allow authenticated users to create new families
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.createdBy;
+      
+      // Allow family members to read family data
+      allow read: if request.auth != null && 
+        request.auth.uid in resource.data.members;
+      
+      // Allow family admin to update family data
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.uid in resource.data.admins);
+      
+      // Allow family admin to delete family
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Family invitations rules
+    match /familyInvitations/{invitationId} {
+      // Allow family admins to create invitations
+      allow create: if request.auth != null;
+      
+      // Allow invited users to read their invitations
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.invitedBy || 
+         request.auth.uid == resource.data.invitedUserId);
+      
+      // Allow invited users to update invitation status
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.invitedUserId;
+      
+      // Allow invitation creator to delete
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.invitedBy;
+    }
   }
 }

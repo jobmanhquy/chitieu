@@ -6,40 +6,34 @@ import { vi } from 'date-fns/locale';
 
 export class GeminiAIService {
   private static instance: GeminiAIService;
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private genAI: GoogleGenerativeAI | null = null;
+  private model: any = null;
+  private isAvailable: boolean = false;
 
   private constructor() {
     // Get API key from environment variables
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    if (!apiKey) {
-      console.warn('Gemini API key not found in environment variables');
-      throw new Error('Gemini API key is required');
+    if (!apiKey || apiKey === 'AIzaSyAy1seVRiDSIn_pXQy1xxDwc5N8puqeK1Y') {
+      console.warn('Gemini API key not found or using placeholder key. AI features will use fallback analysis.');
+      this.isAvailable = false;
+      return;
     }
 
-    // Initialize Gemini AI
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    try {
+      // Initialize Gemini AI
+      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+      this.isAvailable = true;
+    } catch (error) {
+      console.error('Failed to initialize Gemini AI service:', error);
+      this.isAvailable = false;
+    }
   }
 
   public static getInstance(): GeminiAIService {
     if (!GeminiAIService.instance) {
-      try {
-        GeminiAIService.instance = new GeminiAIService();
-      } catch (error) {
-        console.error('Failed to initialize Gemini AI service:', error);
-        // Return a mock instance for development
-        return {
-          analyzeExpenses: async () => ({
-            insights: [],
-            patterns: [],
-            recommendations: [],
-            monthlyPrediction: { totalAmount: 0, confidence: 0, breakdown: [] },
-            riskFactors: { overspending: false, unusualPatterns: [], budgetExceeded: [] }
-          })
-        } as any;
-      }
+      GeminiAIService.instance = new GeminiAIService();
     }
     return GeminiAIService.instance;
   }
@@ -50,10 +44,16 @@ export class GeminiAIService {
         return this.getEmptyAnalysis();
       }
 
+      // If AI service is not available, use fallback analysis
+      if (!this.isAvailable || !this.model) {
+        console.log('Using fallback analysis - AI service not available');
+        return this.getFallbackAnalysis(expenses);
+      }
+
       // Prepare data for AI analysis
       const analysisData = this.prepareExpenseData(expenses);
       
-      // Generate AI insights using Gemini
+      // Generate AI insights using Gemini with error handling
       const insights = await this.generateAIInsights(analysisData);
       const patterns = await this.analyzeSpendingPatterns(analysisData);
       const recommendations = await this.generateSmartRecommendations(analysisData);
@@ -114,6 +114,10 @@ export class GeminiAIService {
   }
 
   private async generateAIInsights(data: any): Promise<AIInsight[]> {
+    if (!this.isAvailable || !this.model) {
+      return this.generateFallbackInsights(data);
+    }
+
     try {
       const prompt = this.buildInsightPrompt(data);
       const result = await this.model.generateContent(prompt);
@@ -205,6 +209,10 @@ Hãy đưa ra 5-7 insights quan trọng nhất về thói quen chi tiêu, bao g�
   }
 
   private async analyzeSpendingPatterns(data: any): Promise<SpendingPattern[]> {
+    if (!this.isAvailable || !this.model) {
+      return this.generateFallbackPatterns(data);
+    }
+
     try {
       const prompt = `
 Phân tích xu hướng chi tiêu theo từng danh mục dựa trên dữ liệu:
@@ -280,6 +288,10 @@ ${Object.entries(data.categoryData).map(([category, expenses]: [string, any]) =>
   }
 
   private async generateSmartRecommendations(data: any): Promise<BudgetRecommendation[]> {
+    if (!this.isAvailable || !this.model) {
+      return this.generateFallbackRecommendations(data);
+    }
+
     try {
       const prompt = `
 Dựa trên dữ liệu chi tiêu, đưa ra khuyến nghị ngân sách thông minh:
@@ -353,6 +365,10 @@ Trung bình tháng: ${data.averageMonthly.toLocaleString('vi-VN')} VND
   }
 
   private async predictMonthlySpending(data: any) {
+    if (!this.isAvailable || !this.model) {
+      return this.generateFallbackPrediction(data);
+    }
+
     try {
       const currentMonth = new Date();
       const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
@@ -425,6 +441,14 @@ Dự đoán tổng chi tiêu tháng này và phân bổ theo danh mục.
   }
 
   private async assessFinancialRisks(data: any) {
+    if (!this.isAvailable || !this.model) {
+      return {
+        overspending: false,
+        unusualPatterns: [],
+        budgetExceeded: []
+      };
+    }
+
     try {
       const prompt = `
 Đánh giá rủi ro tài chính dựa trên dữ liệu chi tiêu:
@@ -612,6 +636,41 @@ Xác định các rủi ro:
       });
     }
 
+    // Category analysis
+    const topCategory = Object.entries(data.categoryData).reduce((max, [category, expenses]: [string, any]) => {
+      const total = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+      return total > max.amount ? { category, amount: total } : max;
+    }, { category: '', amount: 0 });
+
+    if (topCategory.category) {
+      insights.push({
+        id: `fallback_${Date.now()}_2`,
+        type: 'category_analysis',
+        title: `${topCategory.category} là danh mục chi tiêu lớn nhất`,
+        description: `Bạn đã chi ${topCategory.amount.toLocaleString('vi-VN')} VND cho ${topCategory.category}`,
+        severity: 'low',
+        confidence: 0.9,
+        createdAt: new Date(),
+        actionable: true,
+        action: `Xem xét tối ưu hóa chi tiêu cho ${topCategory.category}`
+      });
+    }
+
+    // Weekend vs weekday analysis
+    if (data.weekdayVsWeekend.weekends.average > data.weekdayVsWeekend.weekdays.average * 1.3) {
+      insights.push({
+        id: `fallback_${Date.now()}_3`,
+        type: 'spending_pattern',
+        title: 'Chi tiêu cuối tuần cao hơn ngày thường',
+        description: `Chi tiêu cuối tuần cao hơn ${(((data.weekdayVsWeekend.weekends.average / data.weekdayVsWeekend.weekdays.average) - 1) * 100).toFixed(0)}% so với ngày thường`,
+        severity: 'medium',
+        confidence: 0.8,
+        createdAt: new Date(),
+        actionable: true,
+        action: 'Lập kế hoạch ngân sách cho cuối tuần'
+      });
+    }
+
     return insights;
   }
 
@@ -672,26 +731,15 @@ Xác định các rủi ro:
   }
 
   private getFallbackAnalysis(expenses: Expense[]): AIAnalysisResult {
+    const analysisData = this.prepareExpenseData(expenses);
+    
     return {
-      insights: [{
-        id: 'fallback',
-        type: 'spending_pattern',
-        title: 'Phân tích cơ bản',
-        description: 'Đang sử dụng phân tích cơ bản do không thể kết nối AI service',
-        severity: 'low',
-        confidence: 0.5,
-        createdAt: new Date(),
-        actionable: false
-      }],
-      patterns: [],
-      recommendations: [],
-      monthlyPrediction: {
-        totalAmount: 0,
-        confidence: 0,
-        breakdown: []
-      },
+      insights: this.generateFallbackInsights(analysisData),
+      patterns: this.generateFallbackPatterns(analysisData),
+      recommendations: this.generateFallbackRecommendations(analysisData),
+      monthlyPrediction: this.generateFallbackPrediction(analysisData),
       riskFactors: {
-        overspending: false,
+        overspending: analysisData.totalAmount > analysisData.averageMonthly * 1.5,
         unusualPatterns: [],
         budgetExceeded: []
       }
