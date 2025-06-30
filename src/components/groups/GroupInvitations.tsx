@@ -12,7 +12,8 @@ import {
   Clock,
   Crown,
   Eye,
-  Share2
+  Share2,
+  AlertCircle
 } from 'lucide-react';
 
 interface GroupInvitation {
@@ -23,11 +24,13 @@ interface GroupInvitation {
   invitedAt: Date;
   role: 'member' | 'viewer';
   status: 'pending';
+  groupId?: string;
+  invitationId?: string;
 }
 
 interface GroupInvitationsProps {
   invitations: GroupInvitation[];
-  onAccept: (invitationId: string) => void;
+  onAccept: (invitation: GroupInvitation) => void;
   onDecline: (invitationId: string) => void;
 }
 
@@ -80,7 +83,22 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
       <div className="text-center py-12">
         <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Không có lời mời nào</h3>
-        <p className="text-gray-600">Bạn sẽ nhận được thông báo khi có lời mời tham gia nhóm mới</p>
+        <p className="text-gray-600 mb-4">Bạn sẽ nhận được thông báo khi có lời mời tham gia nhóm mới</p>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium">Cách nhận lời mời:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Người khác mời bạn qua email trong ứng dụng</li>
+                <li>Bạn sẽ nhận thông báo trong tab "Thông báo"</li>
+                <li>Lời mời sẽ xuất hiện ở đây để bạn phản hồi</li>
+                <li>Bạn có thể chấp nhận hoặc từ chối lời mời</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -90,6 +108,9 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
       <div className="flex items-center space-x-2 mb-6">
         <Mail className="w-5 h-5 text-blue-600" />
         <h3 className="text-lg font-semibold text-gray-900">Lời mời tham gia nhóm</h3>
+        <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+          {invitations.length} mới
+        </span>
       </div>
 
       {invitations.map((invitation) => {
@@ -103,7 +124,7 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
             key={invitation.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all"
+            className="bg-white border-2 border-blue-200 rounded-xl p-6 hover:shadow-md transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-4 flex-1">
@@ -117,9 +138,12 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
                       {typeLabel}
                     </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                      Mới
+                    </span>
                   </div>
                   
-                  <div className="space-y-1 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-gray-600">
                     <p>
                       <span className="font-medium">{invitation.invitedBy}</span> đã mời bạn tham gia nhóm
                     </p>
@@ -139,7 +163,7 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
 
                   <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      {invitation.role === 'member' 
+                      <strong>Quyền hạn:</strong> {invitation.role === 'member' 
                         ? 'Bạn sẽ có thể xem, thêm và chỉnh sửa chi tiêu trong nhóm này.'
                         : 'Bạn chỉ có thể xem chi tiêu và báo cáo của nhóm này.'
                       }
@@ -157,7 +181,7 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
                   <X className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => onAccept(invitation.id)}
+                  onClick={() => onAccept(invitation)}
                   className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                   title="Chấp nhận"
                 >
@@ -175,8 +199,8 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
                   Từ chối
                 </button>
                 <button
-                  onClick={() => onAccept(invitation.id)}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  onClick={() => onAccept(invitation)}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   Tham gia nhóm
                 </button>
@@ -185,6 +209,16 @@ export const GroupInvitations: React.FC<GroupInvitationsProps> = ({
           </motion.div>
         );
       })}
+
+      {/* Instructions */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-2">Hướng dẫn:</h4>
+        <ul className="text-sm text-gray-600 space-y-1">
+          <li>• <strong>Chấp nhận:</strong> Bạn sẽ trở thành thành viên nhóm và có thể tham gia quản lý chi tiêu</li>
+          <li>• <strong>Từ chối:</strong> Lời mời sẽ bị xóa và người mời sẽ được thông báo</li>
+          <li>• <strong>Lưu ý:</strong> Bạn có thể rời khỏi nhóm bất cứ lúc nào sau khi tham gia</li>
+        </ul>
+      </div>
     </div>
   );
 };

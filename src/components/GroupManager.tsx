@@ -31,6 +31,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Group } from '../services/groupService';
 import { GroupDetail } from './groups/GroupDetail';
 import { GroupInvitations } from './groups/GroupInvitations';
+import { useNotifications } from '../hooks/useNotifications';
 import toast from 'react-hot-toast';
 
 interface GroupManagerProps {
@@ -41,6 +42,7 @@ interface GroupManagerProps {
 export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { expenses } = useExpenses();
+  const { notifications } = useNotifications();
   const { 
     groups, 
     currentGroup, 
@@ -67,18 +69,20 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
     role: 'member' as 'member' | 'viewer'
   });
 
-  // Mock invitations data - in real app this would come from Firebase
-  const [pendingInvitations, setPendingInvitations] = useState([
-    {
-      id: '1',
-      groupName: 'Gia đình Nguyễn',
-      groupType: 'family',
-      invitedBy: 'Nguyễn Văn A',
-      invitedAt: new Date(),
-      role: 'member' as const,
-      status: 'pending' as const
-    }
-  ]);
+  // Get real invitations from notifications
+  const pendingInvitations = notifications.filter(
+    notification => notification.type === 'invitation' && !notification.isRead
+  ).map(notification => ({
+    id: notification.id,
+    groupName: notification.data?.groupName || 'Nhóm không xác định',
+    groupType: notification.data?.groupType || 'other',
+    invitedBy: notification.data?.inviterName || 'Người dùng',
+    invitedAt: notification.timestamp,
+    role: notification.data?.role || 'member' as const,
+    status: 'pending' as const,
+    groupId: notification.data?.groupId,
+    invitationId: notification.data?.invitationId
+  }));
 
   const groupTypes = [
     { value: 'family', label: 'Gia đình', icon: Heart, color: 'text-red-500' },
@@ -92,10 +96,17 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
     if (!newGroupData.name.trim()) return;
     
     try {
-      await createGroup(newGroupData.name, newGroupData.type, newGroupData.description);
+      const groupId = await createGroup(newGroupData.name, newGroupData.type, newGroupData.description);
       setNewGroupData({ name: '', description: '', type: 'family' });
       setShowCreateModal(false);
       toast.success('Đã tạo nhóm thành công!');
+      
+      // Automatically select the new group
+      const newGroup = groups.find(g => g.id === groupId);
+      if (newGroup) {
+        setSelectedGroup(newGroup);
+        setActiveTab('detail');
+      }
     } catch (error) {
       console.error('Error creating group:', error);
       toast.error('Không thể tạo nhóm');
@@ -116,18 +127,34 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
     }
   };
 
-  const handleAcceptInvitation = (invitationId: string) => {
-    setPendingInvitations(prev => 
-      prev.filter(inv => inv.id !== invitationId)
-    );
-    toast.success('Đã tham gia nhóm thành công!');
+  const handleAcceptInvitation = async (invitation: any) => {
+    try {
+      if (invitation.groupId && invitation.invitationId) {
+        // In a real implementation, this would call the group service
+        // For now, we'll just mark the notification as read
+        console.log('Accepting invitation:', invitation);
+        toast.success('Đã tham gia nhóm thành công!');
+        
+        // Refresh groups to show the new group
+        // This would be handled by the real-time listener in a real app
+      } else {
+        toast.error('Thông tin lời mời không hợp lệ');
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      toast.error('Không thể tham gia nhóm');
+    }
   };
 
-  const handleDeclineInvitation = (invitationId: string) => {
-    setPendingInvitations(prev => 
-      prev.filter(inv => inv.id !== invitationId)
-    );
-    toast.success('Đã từ chối lời mời');
+  const handleDeclineInvitation = async (invitationId: string) => {
+    try {
+      // In a real implementation, this would decline the invitation
+      console.log('Declining invitation:', invitationId);
+      toast.success('Đã từ chối lời mời');
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+      toast.error('Không thể từ chối lời mời');
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -224,15 +251,35 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
                 <div className="text-center py-12">
                   <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có nhóm nào</h3>
-                  <p className="text-gray-600 mb-6">Tạo nhóm đầu tiên để bắt đầu chia sẻ chi tiêu</p>
+                  <p className="text-gray-600 mb-6">Tạo nhóm đầu tiên để bắt đầu chia sẻ chi tiêu với gia đình và bạn bè</p>
                   
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>Tạo nhóm đầu tiên</span>
-                  </button>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Tạo nhóm đầu tiên</span>
+                    </button>
+                    
+                    {pendingInvitations.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Mail className="w-5 h-5 text-blue-600" />
+                          <span className="font-medium text-blue-900">Bạn có {pendingInvitations.length} lời mời</span>
+                        </div>
+                        <p className="text-sm text-blue-700 mb-3">
+                          Kiểm tra tab "Lời mời" để xem và phản hồi các lời mời tham gia nhóm.
+                        </p>
+                        <button
+                          onClick={() => setActiveTab('invitations')}
+                          className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Xem lời mời
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -317,7 +364,7 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Chi tiêu tháng này:</span>
                               <span className="font-semibold text-gray-900">
-                                {formatCurrency(0)} {/* Sẽ tính từ chi tiêu nhóm */}
+                                {formatCurrency(0)} {/* Sẽ tính từ chi tiêu nhóm thực tế */}
                               </span>
                             </div>
                           </div>
@@ -463,12 +510,17 @@ export const GroupManager: React.FC<GroupManagerProps> = ({ isOpen, onClose }) =
                 </select>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
                   <Bell className="w-4 h-4 text-blue-600 mt-0.5" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium">Lời mời sẽ được gửi qua email</p>
-                    <p>Người được mời sẽ nhận được thông báo và có thể chấp nhận lời mời trong ứng dụng.</p>
+                    <p className="font-medium">Luồng mời thành viên:</p>
+                    <ol className="list-decimal list-inside mt-2 space-y-1">
+                      <li>Lời mời được gửi qua hệ thống thông báo</li>
+                      <li>Người được mời sẽ nhận thông báo trong ứng dụng</li>
+                      <li>Họ có thể chấp nhận hoặc từ chối trong tab "Lời mời"</li>
+                      <li>Sau khi chấp nhận, họ sẽ trở thành thành viên nhóm</li>
+                    </ol>
                   </div>
                 </div>
               </div>

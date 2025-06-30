@@ -20,6 +20,20 @@ export const useNotifications = () => {
     setLoading(true);
     setError(null);
 
+    // Create sample notifications for demo if none exist
+    const createSampleNotifications = async () => {
+      try {
+        await notificationService.createSampleNotifications(user.uid);
+      } catch (error) {
+        console.error('Error creating sample notifications:', error);
+      }
+    };
+
+    // Create sample notifications after a short delay
+    const timer = setTimeout(() => {
+      createSampleNotifications();
+    }, 2000);
+
     const unsubscribe = notificationService.subscribeToUserNotifications(
       user.uid,
       (notifications) => {
@@ -30,7 +44,10 @@ export const useNotifications = () => {
       }
     );
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {

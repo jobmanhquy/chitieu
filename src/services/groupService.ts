@@ -13,6 +13,7 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { NotificationService } from './notificationService';
 import toast from 'react-hot-toast';
 
 export interface Group {
@@ -82,6 +83,7 @@ export interface GroupSettings {
 
 export class GroupService {
   private static instance: GroupService;
+  private notificationService = NotificationService.getInstance();
   
   public static getInstance(): GroupService {
     if (!GroupService.instance) {
@@ -160,11 +162,9 @@ export class GroupService {
         }))
       });
 
-      toast.success('Đã tạo nhóm thành công!');
       return docRef.id;
     } catch (error) {
       console.error('Error creating group:', error);
-      toast.error('Không thể tạo nhóm');
       throw error;
     }
   }
@@ -197,13 +197,19 @@ export class GroupService {
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      // Send email invitation (would integrate with email service)
-      await this.sendInvitationEmail(email, invitation);
+      // Create notification for the invited user
+      await this.notificationService.createGroupInvitationNotification(
+        email,
+        'Nhóm', // Would get actual group name
+        'family', // Would get actual group type
+        'Người mời', // Would get actual inviter name
+        groupId,
+        invitation.id
+      );
 
-      toast.success(`Đã gửi lời mời đến ${email}`);
+      console.log(`Invitation sent to ${email} for group ${groupId}`);
     } catch (error) {
       console.error('Error inviting member:', error);
-      toast.error('Không thể gửi lời mời');
       throw error;
     }
   }
@@ -252,10 +258,9 @@ export class GroupService {
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      toast.success('Đã tham gia nhóm!');
+      console.log(`User ${userId} joined group ${groupId}`);
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      toast.error('Không thể tham gia nhóm');
       throw error;
     }
   }
@@ -277,12 +282,9 @@ export class GroupService {
           memberUids: arrayRemove(userId),
           updatedAt: Timestamp.fromDate(new Date())
         });
-
-        toast.success('Đã xóa thành viên khỏi nhóm');
       }
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error('Không thể xóa thành viên');
       throw error;
     }
   }
@@ -316,12 +318,9 @@ export class GroupService {
           members: updatedMembers,
           updatedAt: Timestamp.fromDate(new Date())
         });
-
-        toast.success('Đã cập nhật vai trò thành viên');
       }
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error('Không thể cập nhật vai trò');
       throw error;
     }
   }
@@ -335,11 +334,8 @@ export class GroupService {
         settings: settings,
         updatedAt: Timestamp.fromDate(new Date())
       });
-
-      toast.success('Đã cập nhật cài đặt nhóm');
     } catch (error) {
       console.error('Error updating group settings:', error);
-      toast.error('Không thể cập nhật cài đặt');
       throw error;
     }
   }
@@ -454,10 +450,5 @@ export class GroupService {
           canExportData: false
         };
     }
-  }
-
-  private async sendInvitationEmail(email: string, invitation: GroupInvitation): Promise<void> {
-    // In a real app, this would integrate with an email service
-    console.log(`Sending invitation email to ${email}`, invitation);
   }
 }
