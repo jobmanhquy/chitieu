@@ -44,11 +44,17 @@ npm install
 
 3. **Cấu hình environment variables**
 
-Tạo file `.env.local` trong thư mục root:
+Sao chép file `.env.example` thành `.env.local`:
+
+```bash
+cp .env.example .env.local
+```
+
+Sau đó chỉnh sửa file `.env.local` với thông tin thực tế:
 
 ```env
 # Firebase Configuration
-VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_API_KEY=your_actual_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
@@ -57,20 +63,41 @@ VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
 # Gemini AI Configuration
-VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_GEMINI_API_KEY=your_actual_gemini_api_key
 ```
 
-4. **Khởi chạy ứng dụng**
+4. **Thiết lập Firebase**
+
+- Tạo project mới trên [Firebase Console](https://console.firebase.google.com/)
+- Kích hoạt Authentication (Email/Password và Google)
+- Tạo Firestore Database
+- Sao chép configuration vào file `.env.local`
+
+5. **Thiết lập Gemini AI**
+
+- Truy cập [Google AI Studio](https://makersuite.google.com/app/apikey)
+- Tạo API key mới
+- Thêm vào file `.env.local`
+
+6. **Khởi chạy ứng dụng**
 ```bash
 npm run dev
 ```
 
 ## 🔐 Bảo mật
 
-- Tất cả thông tin nhạy cảm được lưu trong environment variables
-- Firebase Security Rules được cấu hình để bảo vệ dữ liệu người dùng
-- Authentication được xử lý bởi Firebase Auth
-- Dữ liệu được mã hóa trong quá trình truyền tải
+- **Environment Variables**: Tất cả API keys được lưu trong `.env.local` (không commit vào git)
+- **Firebase Security Rules**: Bảo vệ dữ liệu người dùng
+- **Authentication**: Xác thực qua Firebase Auth
+- **Data Encryption**: Mã hóa dữ liệu trong quá trình truyền tải
+
+### ⚠️ Lưu ý bảo mật quan trọng:
+
+1. **KHÔNG BAO GIỜ** commit file `.env.local` vào git
+2. **KHÔNG** chia sẻ API keys công khai
+3. Sử dụng Firebase Security Rules để bảo vệ Firestore
+4. Thường xuyên rotate API keys
+5. Kiểm tra logs để phát hiện truy cập bất thường
 
 ## 📱 Tính năng
 
@@ -104,6 +131,7 @@ npm run dev
 ```bash
 npm run build
 # Upload dist folder to Netlify
+# Đặt environment variables trong Netlify dashboard
 ```
 
 ### Firebase Hosting
@@ -113,6 +141,42 @@ firebase login
 firebase init hosting
 npm run build
 firebase deploy
+```
+
+### Environment Variables cho Production
+
+Khi deploy, đảm bảo thiết lập các environment variables:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
+- `VITE_GEMINI_API_KEY`
+
+## 🔒 Firebase Security Rules
+
+Đảm bảo cấu hình Firestore Security Rules:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only access their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /expenses/{expenseId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+  }
+}
 ```
 
 ## 📄 License

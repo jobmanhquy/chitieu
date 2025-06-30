@@ -4,15 +4,15 @@ import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth'
 import { getAnalytics } from 'firebase/analytics';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
-// Firebase configuration using environment variables with fallbacks
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAy1seVRiDSIn_pXQy1xxDwc5N8puqeK1Y",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "chitieu-5f558.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "chitieu-5f558",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "chitieu-5f558.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "179251457044",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:179251457044:web:da46fc0b529d190a810b01",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-5Z0EBBV3B6"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Validate required configuration
@@ -21,19 +21,22 @@ const missingFields = requiredFields.filter(field => !firebaseConfig[field as ke
 
 if (missingFields.length > 0) {
   console.error('Missing Firebase configuration fields:', missingFields);
+  console.error('Please check your .env.local file and ensure all required Firebase environment variables are set.');
   throw new Error(`Firebase configuration incomplete. Missing: ${missingFields.join(', ')}`);
 }
 
-// Log configuration for debugging (remove in production)
-console.log('Firebase Config Status:', {
-  apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
-  authDomain: firebaseConfig.authDomain ? '✓ Set' : '✗ Missing',
-  projectId: firebaseConfig.projectId ? '✓ Set' : '✗ Missing',
-  storageBucket: firebaseConfig.storageBucket ? '✓ Set' : '✗ Missing',
-  messagingSenderId: firebaseConfig.messagingSenderId ? '✓ Set' : '✗ Missing',
-  appId: firebaseConfig.appId ? '✓ Set' : '✗ Missing',
-  measurementId: firebaseConfig.measurementId ? '✓ Set' : '✗ Missing'
-});
+// Log configuration status for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log('Firebase Config Status:', {
+    apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
+    authDomain: firebaseConfig.authDomain ? '✓ Set' : '✗ Missing',
+    projectId: firebaseConfig.projectId ? '✓ Set' : '✗ Missing',
+    storageBucket: firebaseConfig.storageBucket ? '✓ Set' : '✗ Missing',
+    messagingSenderId: firebaseConfig.messagingSenderId ? '✓ Set' : '✗ Missing',
+    appId: firebaseConfig.appId ? '✓ Set' : '✗ Missing',
+    measurementId: firebaseConfig.measurementId ? '✓ Set' : '✗ Missing'
+  });
+}
 
 // Initialize Firebase
 let app;
