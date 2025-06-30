@@ -1,21 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, AlertTriangle, Info, CheckCircle, TrendingUp, Target, Users, Mail } from 'lucide-react';
-import { useExpenses } from '../hooks/useExpenses';
+import { Bell, X, AlertTriangle, Info, CheckCircle, TrendingUp, Target, Users, Mail, Brain, Trash2 } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
 import { formatCurrency } from '../utils/currency';
-import { startOfMonth, endOfMonth } from 'date-fns';
-
-interface Notification {
-  id: string;
-  type: 'warning' | 'info' | 'success' | 'budget' | 'goal' | 'group' | 'invitation';
-  title: string;
-  message: string;
-  timestamp: Date;
-  isRead: boolean;
-  actionable?: boolean;
-  action?: () => void;
-  data?: any;
-}
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -23,143 +10,40 @@ interface NotificationCenterProps {
 }
 
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const { expenses } = useExpenses();
+  const { 
+    notifications, 
+    loading, 
+    error, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications();
 
-  useEffect(() => {
-    generateNotifications();
-  }, [expenses]);
-
-  const generateNotifications = () => {
-    const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
-    
-    const thisMonthExpenses = expenses.filter(expense =>
-      expense.date >= monthStart && expense.date <= monthEnd
-    );
-    
-    const totalThisMonth = thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const dailyAverage = totalThisMonth / now.getDate();
-    
-    const newNotifications: Notification[] = [];
-
-    // Budget warning
-    if (totalThisMonth > 5000000) {
-      newNotifications.push({
-        id: 'budget-warning',
-        type: 'warning',
-        title: 'Cảnh báo ngân sách',
-        message: `Chi tiêu tháng này đã đạt ${formatCurrency(totalThisMonth)}. Hãy cân nhắc giảm chi tiêu.`,
-        timestamp: new Date(),
-        isRead: false,
-        actionable: true
-      });
-    }
-
-    // Daily spending insight
-    if (dailyAverage > 200000) {
-      newNotifications.push({
-        id: 'daily-insight',
-        type: 'info',
-        title: 'Thông tin chi tiêu',
-        message: `Trung bình bạn chi ${formatCurrency(dailyAverage)}/ngày. Điều này cao hơn mức khuyến nghị.`,
-        timestamp: new Date(),
-        isRead: false
-      });
-    }
-
-    // Achievement notification
-    if (expenses.length >= 10) {
-      newNotifications.push({
-        id: 'achievement',
-        type: 'success',
-        title: 'Thành tích mới!',
-        message: 'Bạn đã ghi chép 10+ giao dịch. Tiếp tục duy trì thói quen tốt!',
-        timestamp: new Date(),
-        isRead: false
-      });
-    }
-
-    // Goal reminder
-    newNotifications.push({
-      id: 'goal-reminder',
-      type: 'goal',
-      title: 'Nhắc nhở mục tiêu',
-      message: 'Đừng quên cập nhật tiến độ mục tiêu tiết kiệm của bạn.',
-      timestamp: new Date(),
-      isRead: false
-    });
-
-    // Group invitation notification
-    newNotifications.push({
-      id: 'group-invitation',
-      type: 'invitation',
-      title: 'Lời mời tham gia nhóm',
-      message: 'Nguyễn Văn A đã mời bạn tham gia nhóm "Gia đình Nguyễn"',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      isRead: false,
-      actionable: true,
-      data: {
-        groupName: 'Gia đình Nguyễn',
-        inviterName: 'Nguyễn Văn A'
-      }
-    });
-
-    // Group expense notification
-    newNotifications.push({
-      id: 'group-expense',
-      type: 'group',
-      title: 'Chi tiêu nhóm mới',
-      message: 'Trần Thị B đã thêm chi tiêu "Ăn trưa" - 150,000₫ trong nhóm "Bạn bè"',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      isRead: false,
-      actionable: true,
-      data: {
-        groupName: 'Bạn bè',
-        memberName: 'Trần Thị B',
-        amount: 150000,
-        description: 'Ăn trưa'
-      }
-    });
-
-    // AI insight notification
-    newNotifications.push({
-      id: 'ai-insight',
-      type: 'info',
-      title: 'AI Insight mới',
-      message: 'Gemini AI phát hiện bạn chi tiêu cho ăn uống tăng 25% so với tháng trước.',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      isRead: false,
-      actionable: true
-    });
-
-    setNotifications(newNotifications);
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === id ? { ...notif, isRead: true } : notif
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
-  };
-
-  const handleNotificationAction = (notification: Notification) => {
-    markAsRead(notification.id);
+  const handleNotificationAction = async (notification: any) => {
+    await markAsRead(notification.id);
     
     if (notification.type === 'invitation') {
       // Handle group invitation
       console.log('Handle group invitation:', notification.data);
+      // Would open group invitation modal or navigate to groups
     } else if (notification.type === 'group') {
       // Handle group expense
       console.log('Handle group expense:', notification.data);
+      // Would navigate to group detail or expense detail
+    } else if (notification.type === 'ai_insight') {
+      // Handle AI insight
+      console.log('Handle AI insight:', notification.data);
+      // Would open AI assistant or analytics
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      await deleteNotification(notificationId);
+    } catch (error) {
+      console.error('Error deleting notification:', error);
     }
   };
 
@@ -172,6 +56,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
       case 'goal': return Target;
       case 'group': return Users;
       case 'invitation': return Mail;
+      case 'ai_insight': return Brain;
       default: return Info;
     }
   };
@@ -185,11 +70,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
       case 'goal': return 'text-purple-600 bg-purple-100';
       case 'group': return 'text-indigo-600 bg-indigo-100';
       case 'invitation': return 'text-pink-600 bg-pink-100';
+      case 'ai_insight': return 'text-purple-600 bg-purple-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   if (!isOpen) return null;
 
@@ -237,7 +121,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
 
         {/* Notifications */}
         <div className="flex-1 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
+              <p>Lỗi tải thông báo</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <Bell className="w-12 h-12 mb-4 opacity-50" />
               <p>Không có thông báo nào</p>
@@ -255,7 +149,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer ${
+                      className={`p-4 rounded-xl border transition-all cursor-pointer group ${
                         notification.isRead 
                           ? 'bg-gray-50 border-gray-200' 
                           : 'bg-white border-gray-300 shadow-sm'
@@ -272,7 +166,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                         <div className={`p-2 rounded-full ${colorClass}`}>
                           <Icon className="w-4 h-4" />
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <h3 className={`font-medium ${
                             notification.isRead ? 'text-gray-600' : 'text-gray-900'
                           }`}>
@@ -284,10 +178,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                             {notification.message}
                           </p>
                           <p className="text-xs text-gray-400 mt-2">
-                            {notification.timestamp.toLocaleTimeString('vi-VN', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {notification.timestamp.toLocaleString('vi-VN')}
                           </p>
 
                           {/* Special handling for group invitations */}
@@ -328,10 +219,34 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                               </button>
                             </div>
                           )}
+
+                          {/* Special handling for AI insights */}
+                          {notification.type === 'ai_insight' && notification.actionable && (
+                            <div className="mt-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotificationAction(notification);
+                                }}
+                                className="w-full bg-purple-50 text-purple-600 py-2 px-3 rounded-lg hover:bg-purple-100 transition-colors text-sm"
+                              >
+                                Xem phân tích AI
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        {!notification.isRead && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
+                        
+                        <div className="flex items-center space-x-2">
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                          <button
+                            onClick={(e) => handleDeleteNotification(notification.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   );

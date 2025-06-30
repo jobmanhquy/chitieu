@@ -24,6 +24,7 @@ import { EmailVerificationBanner } from './components/auth/EmailVerificationBann
 // Hooks & Services
 import { useExpenses } from './hooks/useExpenses';
 import { useAIAnalysis } from './hooks/useAIAnalysis';
+import { useRealTime } from './hooks/useRealTime';
 import { useStore } from './store/useStore';
 import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -34,6 +35,9 @@ function AppContent() {
   const { analysis, loading: aiLoading, error: aiError, refreshAnalysis } = useAIAnalysis(expenses);
   const { activeView, sidebarOpen, setSidebarOpen } = useStore();
   const { user, loading: authLoading } = useAuth();
+  
+  // Initialize real-time listeners
+  useRealTime();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
