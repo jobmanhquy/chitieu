@@ -29,8 +29,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
       try {
         await deleteAccount();
         onClose();
-      } catch (error) {
-        // Error handled in AuthContext
+      } catch (error: any) {
+        // Check if it's a requires-recent-login error
+        if (error?.code === 'auth/requires-recent-login') {
+          // The error message is already handled in AuthContext
+          // Just show additional guidance
+          setTimeout(() => {
+            if (window.confirm('Bạn có muốn đăng xuất ngay bây giờ để đăng nhập lại không?')) {
+              signOut();
+            }
+          }, 2000);
+        }
+        // Other errors are handled in AuthContext
       }
     }
   };
@@ -172,9 +182,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose }) => 
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
             <div className="bg-white rounded-lg p-6 max-w-sm w-full">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Xác nhận xóa tài khoản</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-4">
                 Bạn có chắc chắn muốn xóa tài khoản? Tất cả dữ liệu sẽ bị mất vĩnh viễn.
               </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Lưu ý:</strong> Nếu bạn đăng nhập từ lâu, bạn có thể cần đăng nhập lại trước khi xóa tài khoản.
+                </p>
+              </div>
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}

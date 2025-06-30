@@ -20,6 +20,30 @@ service cloud.firestore {
         request.auth.uid in resource.data.userId;
     }
     
+    // Groups collection rules
+    match /groups/{groupId} {
+      // Allow authenticated users to create new groups
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.createdBy;
+      
+      // Allow group members to read group data
+      allow read: if request.auth != null && 
+        request.auth.uid in resource.data.memberUids;
+      
+      // Allow group admin/creator to update group data
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.uid in resource.data.admins);
+      
+      // Allow group creator to delete group
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.createdBy;
+      
+      // Allow users to list groups they are members of
+      allow list: if request.auth != null && 
+        request.auth.uid in resource.data.memberUids;
+    }
+    
     // Family sharing rules
     match /families/{familyId} {
       // Allow authenticated users to create new families

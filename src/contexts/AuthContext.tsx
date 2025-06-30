@@ -13,7 +13,9 @@ import {
   onAuthStateChanged,
   isSignInWithEmailLink,
   sendEmailVerification,
-  reload
+  reload,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
@@ -193,7 +195,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Check if email is verified
       if (!firebaseUser.emailVerified) {
-        toast.warning('Email chưa được xác thực. Vui lòng kiểm tra hộp thư hoặc gửi lại email xác thực.');
+        toast.error('Email chưa được xác thực. Vui lòng kiểm tra hộp thư hoặc gửi lại email xác thực.');
       } else {
         toast.success('Đăng nhập thành công!');
       }
@@ -362,6 +364,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (err: any) {
       console.error('Delete account error:', err);
+      
+      // Handle requires-recent-login error
+      if (err.code === 'auth/requires-recent-login') {
+        toast.error('Để xóa tài khoản, bạn cần đăng nhập lại gần đây. Vui lòng đăng xuất và đăng nhập lại, sau đó thử xóa tài khoản.');
+        return;
+      }
+      
       const errorMessage = getErrorMessage(err.code);
       setError(errorMessage);
       toast.error(errorMessage);
@@ -398,6 +407,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'Phương thức đăng nhập này chưa được kích hoạt';
       case 'auth/too-many-requests':
         return 'Quá nhiều yêu cầu gửi email. Vui lòng thử lại sau';
+      case 'auth/unauthorized-continue-uri':
+        return 'Domain không được phép. Vui lòng liên hệ quản trị viên';
+      case 'auth/requires-recent-login':
+        return 'Thao tác này yêu cầu đăng nhập gần đây. Vui lòng đăng nhập lại';
       default:
         return 'Đã xảy ra lỗi. Vui lòng thử lại';
     }
