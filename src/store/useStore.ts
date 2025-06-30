@@ -17,7 +17,7 @@ interface AppState {
   
   // UI State
   sidebarOpen: boolean;
-  activeView: 'dashboard' | 'expenses' | 'analytics' | 'goals' | 'settings';
+  activeView: 'dashboard' | 'expenses' | 'analytics' | 'goals' | 'achievements' | 'challenges' | 'settings';
   
   // Filters
   dateRange: {
@@ -31,7 +31,7 @@ interface AppState {
   setCurrency: (currency: 'VND' | 'USD' | 'EUR') => void;
   setLanguage: (language: 'vi' | 'en') => void;
   setSidebarOpen: (open: boolean) => void;
-  setActiveView: (view: 'dashboard' | 'expenses' | 'analytics' | 'goals' | 'settings') => void;
+  setActiveView: (view: 'dashboard' | 'expenses' | 'analytics' | 'goals' | 'achievements' | 'challenges' | 'settings') => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   setSelectedCategories: (categories: string[]) => void;
   
@@ -62,7 +62,96 @@ export const useStore = create<AppState>()(
       language: 'vi',
       financialGoals: [],
       budgetGoals: [],
-      achievements: [],
+      achievements: [
+        {
+          id: 'first_expense',
+          title: 'Bước đầu tiên',
+          description: 'Thêm khoản chi tiêu đầu tiên',
+          icon: 'Trophy',
+          type: 'milestone',
+          requirement: 1,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa tính năng phân tích cơ bản'
+        },
+        {
+          id: 'expense_streak_7',
+          title: 'Kiên trì 7 ngày',
+          description: 'Ghi chép chi tiêu liên tục 7 ngày',
+          icon: 'Calendar',
+          type: 'streak',
+          requirement: 7,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa báo cáo tuần'
+        },
+        {
+          id: 'expense_streak_30',
+          title: 'Thói quen tốt',
+          description: 'Ghi chép chi tiêu liên tục 30 ngày',
+          icon: 'Star',
+          type: 'streak',
+          requirement: 30,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa AI insights nâng cao'
+        },
+        {
+          id: 'budget_keeper',
+          title: 'Người giữ ngân sách',
+          description: 'Không vượt ngân sách trong 1 tháng',
+          icon: 'Shield',
+          type: 'budget',
+          requirement: 1,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa cảnh báo ngân sách thông minh'
+        },
+        {
+          id: 'saver_100k',
+          title: 'Tiết kiệm nhỏ',
+          description: 'Tiết kiệm được 100,000 VND',
+          icon: 'PiggyBank',
+          type: 'savings',
+          requirement: 100000,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa mục tiêu tiết kiệm'
+        },
+        {
+          id: 'saver_1m',
+          title: 'Tiết kiệm lớn',
+          description: 'Tiết kiệm được 1,000,000 VND',
+          icon: 'Gem',
+          type: 'savings',
+          requirement: 1000000,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa đầu tư cơ bản'
+        },
+        {
+          id: 'category_master',
+          title: 'Chuyên gia phân loại',
+          description: 'Sử dụng tất cả 8 danh mục chi tiêu',
+          icon: 'Grid',
+          type: 'category',
+          requirement: 8,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa danh mục tùy chỉnh'
+        },
+        {
+          id: 'expense_100',
+          title: 'Người ghi chép chuyên nghiệp',
+          description: 'Ghi chép 100 khoản chi tiêu',
+          icon: 'BookOpen',
+          type: 'milestone',
+          requirement: 100,
+          progress: 0,
+          isUnlocked: false,
+          reward: 'Mở khóa xuất dữ liệu Excel'
+        }
+      ],
       challenges: [],
       sidebarOpen: false,
       activeView: 'dashboard',

@@ -17,6 +17,7 @@ import { AdvancedAnalytics } from './components/AdvancedAnalytics';
 import { ResponsiveLayout } from './components/ResponsiveLayout';
 import { AuthModal } from './components/auth/AuthModal';
 import { LandingPage } from './components/LandingPage';
+import { ChallengesManager } from './components/challenges/ChallengesManager';
 
 // Hooks & Services
 import { useExpenses } from './hooks/useExpenses';
@@ -207,12 +208,7 @@ function AppContent() {
         return <AchievementsPanel />;
 
       case 'challenges':
-        return (
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Thử thách</h1>
-            <p className="text-gray-600">Tính năng đang được phát triển...</p>
-          </div>
-        );
+        return <ChallengesManager />;
 
       case 'settings':
         return (
