@@ -22,6 +22,7 @@ export interface FamilyGroup {
   description?: string;
   createdBy: string;
   members: FamilyMember[];
+  memberUids: string[];
   invitations: FamilyInvitation[];
   settings: FamilySettings;
   createdAt: Date;
@@ -126,6 +127,7 @@ export class FamilyService {
           permissions: adminPermissions,
           isActive: true
         }],
+        memberUids: [createdBy || ''],
         invitations: [],
         settings: defaultSettings,
         createdAt: new Date(),
@@ -218,6 +220,7 @@ export class FamilyService {
           ...newMember,
           joinedAt: Timestamp.fromDate(newMember.joinedAt)
         }),
+        memberUids: arrayUnion(userId),
         updatedAt: Timestamp.fromDate(new Date())
       });
 
@@ -243,6 +246,7 @@ export class FamilyService {
         
         await updateDoc(familyRef, {
           members: updatedMembers,
+          memberUids: arrayRemove(userId),
           updatedAt: Timestamp.fromDate(new Date())
         });
 
@@ -343,7 +347,7 @@ export class FamilyService {
     try {
       const q = query(
         collection(db, 'families'),
-        where('members', 'array-contains-any', [{ userId }])
+        where('memberUids', 'array-contains', userId)
       );
       
       const querySnapshot = await getDocs(q);
