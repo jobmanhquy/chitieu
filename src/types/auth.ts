@@ -37,4 +37,6 @@ export interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   updateProfile: (data: { displayName?: string; photoURL?: string }) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
+  checkEmailVerification: () => Promise<boolean>;
 }

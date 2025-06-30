@@ -19,6 +19,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { LandingPage } from './components/LandingPage';
 import { ChallengesManager } from './components/challenges/ChallengesManager';
 import { SettingsManager } from './components/settings/SettingsManager';
+import { EmailVerificationBanner } from './components/auth/EmailVerificationBanner';
 
 // Hooks & Services
 import { useExpenses } from './hooks/useExpenses';
@@ -220,44 +221,52 @@ function AppContent() {
   };
 
   const header = (
-    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center justify-between h-16">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          
-          <div>
-            <h1 className="text-lg lg:text-xl font-bold text-gray-900">
-              {activeView === 'dashboard' && 'Tổng quan'}
-              {activeView === 'expenses' && 'Chi tiêu'}
-              {activeView === 'analytics' && 'Phân tích'}
-              {activeView === 'goals' && 'Mục tiêu'}
-              {activeView === 'achievements' && 'Thành tích'}
-              {activeView === 'challenges' && 'Thử thách'}
-              {activeView === 'settings' && 'Cài đặt'}
-            </h1>
-            {user && (
-              <p className="text-xs lg:text-sm text-gray-500">
-                Xin chào, {user.displayName || user.email}
-              </p>
-            )}
+    <>
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
+      
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            
+            <div>
+              <h1 className="text-lg lg:text-xl font-bold text-gray-900">
+                {activeView === 'dashboard' && 'Tổng quan'}
+                {activeView === 'expenses' && 'Chi tiêu'}
+                {activeView === 'analytics' && 'Phân tích'}
+                {activeView === 'goals' && 'Mục tiêu'}
+                {activeView === 'achievements' && 'Thành tích'}
+                {activeView === 'challenges' && 'Thử thách'}
+                {activeView === 'settings' && 'Cài đặt'}
+              </h1>
+              {user && (
+                <p className="text-xs lg:text-sm text-gray-500">
+                  Xin chào, {user.displayName || user.email}
+                  {!user.emailVerified && (
+                    <span className="ml-2 text-orange-600 font-medium">• Email chưa xác thực</span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {activeView === 'dashboard' && (
-          <button
-            onClick={handleAddExpenseClick}
-            className="hidden sm:block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Thêm chi tiêu
-          </button>
-        )}
-      </div>
-    </header>
+          {activeView === 'dashboard' && (
+            <button
+              onClick={handleAddExpenseClick}
+              className="hidden sm:block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Thêm chi tiêu
+            </button>
+          )}
+        </div>
+      </header>
+    </>
   );
 
   const sidebar = (

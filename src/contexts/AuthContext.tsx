@@ -11,7 +11,9 @@ import {
   updateProfile as firebaseUpdateProfile,
   deleteUser,
   onAuthStateChanged,
-  isSignInWithEmailLink
+  isSignInWithEmailLink,
+  sendEmailVerification,
+  reload
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
@@ -73,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await setDoc(userRef, userData);
         console.log('User document created successfully');
       } else {
-        // Update last login time
+        // Update last login time and email verification status
         await updateDoc(userRef, {
           lastLoginAt: new Date(),
           emailVerified: firebaseUser.emailVerified
@@ -84,6 +86,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error creating user document:', error);
       // Don't throw error here to prevent blocking authentication
       // The app can still work without Firestore user document
+    }
+  };
+
+  // Send email verification
+  const sendVerificationEmail = async () => {
+    if (!auth.currentUser) {
+      throw new Error('Không có người dùng đăng nhập');
+    }
+
+    try {
+      await sendEmailVerification(auth.currentUser, {
+        url: `${window.location.origin}/verify-email`,
+        handleCodeInApp: false
+      });
+      toast.success('Email xác thực đã được gửi! Vui lòng kiểm tra hộp thư.');
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      const errorMessage = getErrorMessage(error.code);
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  // Check email verification status
+  const checkEmailVerification = async () => {
+    if (!auth.currentUser) return false;
+
+    try {
+      await reload(auth.currentUser);
+      const isVerified = auth.currentUser.emailVerified;
+      
+      if (isVerified) {
+        // Update user document
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          emailVerified: true,
+          updatedAt: new Date()
+        });
+        
+        // Update local state
+        setUser(convertFirebaseUser(auth.currentUser));
+        toast.success('Email đã được xác thực thành công!');
+      }
+      
+      return isVerified;
+    } catch (error) {
+      console.error('Error checking email verification:', error);
+      return false;
     }
   };
 
@@ -108,7 +157,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       await createUserDocument(firebaseUser);
-      toast.success('Tài khoản đã được tạo thành công!');
+      
+      // Send verification email automatically
+      await sendEmailVerification(firebaseUser, {
+        url: `${window.location.origin}/verify-email`,
+        handleCodeInApp: false
+      });
+
+      toast.success('Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác thực.');
     } catch (err: any) {
       console.error('Sign up error:', err);
       const errorMessage = getErrorMessage(err.code);
@@ -134,7 +190,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
 
       await createUserDocument(firebaseUser);
-      toast.success('Đăng nhập thành công!');
+      
+      // Check if email is verified
+      if (!firebaseUser.emailVerified) {
+        toast.warning('Email chưa được xác thực. Vui lòng kiểm tra hộp thư hoặc gửi lại email xác thực.');
+      } else {
+        toast.success('Đăng nhập thành công!');
+      }
     } catch (err: any) {
       console.error('Sign in error:', err);
       const errorMessage = getErrorMessage(err.code);
@@ -334,6 +396,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return 'Thông tin đăng nhập không hợp lệ';
       case 'auth/operation-not-allowed':
         return 'Phương thức đăng nhập này chưa được kích hoạt';
+      case 'auth/too-many-requests':
+        return 'Quá nhiều yêu cầu gửi email. Vui lòng thử lại sau';
       default:
         return 'Đã xảy ra lỗi. Vui lòng thử lại';
     }
@@ -379,7 +443,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     resetPassword,
     updateProfile,
-    deleteAccount
+    deleteAccount,
+    sendVerificationEmail,
+    checkEmailVerification
   };
 
   return (

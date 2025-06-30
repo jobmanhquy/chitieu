@@ -24,7 +24,7 @@ import { UserProfile } from './auth/UserProfile';
 import { SmartAssistant } from './SmartAssistant';
 import { ReceiptScanner } from './ReceiptScanner';
 import { NotificationCenter } from './NotificationCenter';
-import { FamilySharing } from './FamilySharing';
+import { GroupManager } from './GroupManager';
 
 interface NavigationProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
   const [showSmartAssistant, setShowSmartAssistant] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showFamilySharing, setShowFamilySharing] = useState(false);
+  const [showGroupManager, setShowGroupManager] = useState(false);
 
   const menuItems = [
     {
@@ -119,12 +119,12 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
       action: () => setShowNotifications(true)
     },
     {
-      id: 'family',
-      label: 'Gia đình',
+      id: 'groups',
+      label: 'Nhóm',
       icon: Users,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
-      action: () => setShowFamilySharing(true)
+      action: () => setShowGroupManager(true)
     }
   ];
 
@@ -294,9 +294,9 @@ export const Navigation: React.FC<NavigationProps> = ({ isOpen, onClose }) => {
         onClose={() => setShowNotifications(false)}
       />
 
-      <FamilySharing
-        isOpen={showFamilySharing}
-        onClose={() => setShowFamilySharing(false)}
+      <GroupManager
+        isOpen={showGroupManager}
+        onClose={() => setShowGroupManager(false)}
       />
     </>
   );
