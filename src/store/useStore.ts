@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Expense } from '../types/expense';
 import { FinancialGoal, BudgetGoal, Achievement, Challenge } from '../types/goals';
 
@@ -251,6 +251,19 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'expense-tracker-store',
+      storage: createJSONStorage(() => localStorage, {
+        reviver: (key, value) => {
+          // Convert date strings back to Date objects
+          if (typeof value === 'string') {
+            // Check if the value looks like an ISO date string
+            const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+            if (dateRegex.test(value)) {
+              return new Date(value);
+            }
+          }
+          return value;
+        }
+      }),
       partialize: (state) => ({
         theme: state.theme,
         currency: state.currency,
@@ -258,7 +271,8 @@ export const useStore = create<AppState>()(
         financialGoals: state.financialGoals,
         budgetGoals: state.budgetGoals,
         achievements: state.achievements,
-        challenges: state.challenges
+        challenges: state.challenges,
+        dateRange: state.dateRange
       })
     }
   )
