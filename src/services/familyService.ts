@@ -13,7 +13,6 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 export interface FamilyGroup {
@@ -87,7 +86,13 @@ export class FamilyService {
 
   // Create a new family group
   async createFamily(name: string, description?: string, createdBy?: string): Promise<string> {
+    if (!createdBy) {
+      throw new Error('User ID is required to create family');
+    }
+
     try {
+      console.log('Creating family in Firestore:', { name, description, createdBy });
+
       const defaultSettings: FamilySettings = {
         allowMemberInvites: true,
         requireApprovalForExpenses: false,
@@ -114,41 +119,33 @@ export class FamilyService {
         canManageSettings: true
       };
 
-      const familyData: Omit<FamilyGroup, 'id'> = {
+      const now = new Date();
+      const familyData = {
         name,
-        description,
-        createdBy: createdBy || '',
+        description: description || '',
+        createdBy,
         members: [{
-          userId: createdBy || '',
-          email: '',
-          displayName: '',
-          role: 'admin',
-          joinedAt: new Date(),
+          userId: createdBy,
+          email: '', // Will be filled from user data
+          displayName: '', // Will be filled from user data
+          role: 'admin' as const,
+          joinedAt: Timestamp.fromDate(now),
           permissions: adminPermissions,
           isActive: true
         }],
-        memberUids: [createdBy || ''],
+        memberUids: [createdBy],
         invitations: [],
         settings: defaultSettings,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
       };
 
-      const docRef = await addDoc(collection(db, 'families'), {
-        ...familyData,
-        createdAt: Timestamp.fromDate(familyData.createdAt),
-        updatedAt: Timestamp.fromDate(familyData.updatedAt),
-        members: familyData.members.map(member => ({
-          ...member,
-          joinedAt: Timestamp.fromDate(member.joinedAt)
-        }))
-      });
-
-      toast.success('Đã tạo nhóm gia đình thành công!');
+      const docRef = await addDoc(collection(db, 'families'), familyData);
+      console.log('Family created successfully with ID:', docRef.id);
+      
       return docRef.id;
     } catch (error) {
-      console.error('Error creating family:', error);
-      toast.error('Không thể tạo nhóm gia đình');
+      console.error('Error creating family in Firestore:', error);
       throw error;
     }
   }
@@ -156,8 +153,9 @@ export class FamilyService {
   // Invite a member to family
   async inviteMember(familyId: string, email: string, role: 'member' | 'viewer', invitedBy: string): Promise<void> {
     try {
-      const invitation: FamilyInvitation = {
-        id: Date.now().toString(),
+      console.log('Inviting member to family:', { familyId, email, role, invitedBy });
+
+      const invitation: Omit<FamilyInvitation, 'id'> = {
         email,
         role,
         invitedBy,
@@ -170,19 +168,16 @@ export class FamilyService {
       await updateDoc(familyRef, {
         invitations: arrayUnion({
           ...invitation,
+          id: Date.now().toString(),
           invitedAt: Timestamp.fromDate(invitation.invitedAt),
           expiresAt: Timestamp.fromDate(invitation.expiresAt)
         }),
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      // Send email invitation (would integrate with email service)
-      await this.sendInvitationEmail(email, invitation);
-
-      toast.success(`Đã gửi lời mời đến ${email}`);
+      console.log('Invitation added to family successfully');
     } catch (error) {
       console.error('Error inviting member:', error);
-      toast.error('Không thể gửi lời mời');
       throw error;
     }
   }
@@ -190,6 +185,8 @@ export class FamilyService {
   // Accept invitation
   async acceptInvitation(familyId: string, invitationId: string, userId: string, userEmail: string, displayName: string): Promise<void> {
     try {
+      console.log('Accepting invitation:', { familyId, invitationId, userId, userEmail, displayName });
+
       const memberPermissions: FamilyPermissions = {
         canViewExpenses: true,
         canAddExpenses: true,
@@ -202,12 +199,12 @@ export class FamilyService {
         canManageSettings: false
       };
 
-      const newMember: FamilyMember = {
+      const newMember = {
         userId,
         email: userEmail,
         displayName,
-        role: 'member', // Will be updated based on invitation
-        joinedAt: new Date(),
+        role: 'member' as const,
+        joinedAt: Timestamp.fromDate(new Date()),
         permissions: memberPermissions,
         isActive: true
       };
@@ -216,18 +213,14 @@ export class FamilyService {
       
       // Add member and update invitation status
       await updateDoc(familyRef, {
-        members: arrayUnion({
-          ...newMember,
-          joinedAt: Timestamp.fromDate(newMember.joinedAt)
-        }),
+        members: arrayUnion(newMember),
         memberUids: arrayUnion(userId),
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      toast.success('Đã tham gia nhóm gia đình!');
+      console.log('Member added to family successfully');
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      toast.error('Không thể tham gia nhóm gia đình');
       throw error;
     }
   }
@@ -235,26 +228,30 @@ export class FamilyService {
   // Remove member from family
   async removeMember(familyId: string, userId: string): Promise<void> {
     try {
-      const familyRef = doc(db, 'families', familyId);
-      
+      console.log('Removing member from family:', { familyId, userId });
+
       // Get current family data to find the member
-      const familyDoc = await getDocs(query(collection(db, 'families'), where('__name__', '==', familyId)));
+      const familyQuery = query(collection(db, 'families'), where('__name__', '==', familyId));
+      const familySnapshot = await getDocs(familyQuery);
       
-      if (!familyDoc.empty) {
-        const familyData = familyDoc.docs[0].data() as FamilyGroup;
-        const updatedMembers = familyData.members.filter(member => member.userId !== userId);
+      if (!familySnapshot.empty) {
+        const familyDoc = familySnapshot.docs[0];
+        const familyData = familyDoc.data() as any;
         
+        // Filter out the member to remove
+        const updatedMembers = familyData.members.filter((member: any) => member.userId !== userId);
+        
+        const familyRef = doc(db, 'families', familyId);
         await updateDoc(familyRef, {
           members: updatedMembers,
           memberUids: arrayRemove(userId),
           updatedAt: Timestamp.fromDate(new Date())
         });
 
-        toast.success('Đã xóa thành viên khỏi nhóm');
+        console.log('Member removed from family successfully');
       }
     } catch (error) {
       console.error('Error removing member:', error);
-      toast.error('Không thể xóa thành viên');
       throw error;
     }
   }
@@ -262,14 +259,18 @@ export class FamilyService {
   // Update member role and permissions
   async updateMemberRole(familyId: string, userId: string, newRole: 'admin' | 'member' | 'viewer'): Promise<void> {
     try {
-      const familyRef = doc(db, 'families', familyId);
-      
+      console.log('Updating member role:', { familyId, userId, newRole });
+
       // Get current family data
-      const familyDoc = await getDocs(query(collection(db, 'families'), where('__name__', '==', familyId)));
+      const familyQuery = query(collection(db, 'families'), where('__name__', '==', familyId));
+      const familySnapshot = await getDocs(familyQuery);
       
-      if (!familyDoc.empty) {
-        const familyData = familyDoc.docs[0].data() as FamilyGroup;
-        const updatedMembers = familyData.members.map(member => {
+      if (!familySnapshot.empty) {
+        const familyDoc = familySnapshot.docs[0];
+        const familyData = familyDoc.data() as any;
+        
+        // Update the specific member's role and permissions
+        const updatedMembers = familyData.members.map((member: any) => {
           if (member.userId === userId) {
             return {
               ...member,
@@ -280,16 +281,16 @@ export class FamilyService {
           return member;
         });
         
+        const familyRef = doc(db, 'families', familyId);
         await updateDoc(familyRef, {
           members: updatedMembers,
           updatedAt: Timestamp.fromDate(new Date())
         });
 
-        toast.success('Đã cập nhật vai trò thành viên');
+        console.log('Member role updated successfully');
       }
     } catch (error) {
       console.error('Error updating member role:', error);
-      toast.error('Không thể cập nhật vai trò');
       throw error;
     }
   }
@@ -297,6 +298,8 @@ export class FamilyService {
   // Update family settings
   async updateFamilySettings(familyId: string, settings: Partial<FamilySettings>): Promise<void> {
     try {
+      console.log('Updating family settings:', { familyId, settings });
+
       const familyRef = doc(db, 'families', familyId);
       
       await updateDoc(familyRef, {
@@ -304,10 +307,9 @@ export class FamilyService {
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      toast.success('Đã cập nhật cài đặt nhóm gia đình');
+      console.log('Family settings updated successfully');
     } catch (error) {
       console.error('Error updating family settings:', error);
-      toast.error('Không thể cập nhật cài đặt');
       throw error;
     }
   }
@@ -339,12 +341,17 @@ export class FamilyService {
       } else {
         callback(null);
       }
+    }, (error) => {
+      console.error('Error in family subscription:', error);
+      callback(null);
     });
   }
 
   // Get user's families
   async getUserFamilies(userId: string): Promise<FamilyGroup[]> {
     try {
+      console.log('Getting families for user:', userId);
+
       const q = query(
         collection(db, 'families'),
         where('memberUids', 'array-contains', userId)
@@ -353,8 +360,12 @@ export class FamilyService {
       const querySnapshot = await getDocs(q);
       const families: FamilyGroup[] = [];
       
+      console.log('Found families:', querySnapshot.size);
+      
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('Processing family:', doc.id, data);
+        
         families.push({
           id: doc.id,
           ...data,
@@ -372,6 +383,7 @@ export class FamilyService {
         } as FamilyGroup);
       });
       
+      console.log('Processed families:', families);
       return families;
     } catch (error) {
       console.error('Error getting user families:', error);
@@ -419,16 +431,5 @@ export class FamilyService {
           canManageSettings: false
         };
     }
-  }
-
-  private async sendInvitationEmail(email: string, invitation: FamilyInvitation): Promise<void> {
-    // In a real app, this would integrate with an email service like SendGrid, AWS SES, etc.
-    console.log(`Sending invitation email to ${email}`, invitation);
-    
-    // For now, we'll just log it. In production, you would:
-    // 1. Use Firebase Functions to send emails
-    // 2. Create invitation links with tokens
-    // 3. Handle email templates
-    // 4. Track email delivery status
   }
 }

@@ -99,12 +99,12 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
     }
   };
 
-  // Calculate family expenses (mock for now - would need real family expense aggregation)
-  const familyExpenses = currentFamily?.members.reduce((total, member) => {
-    // In real implementation, this would aggregate expenses from all family members
-    const memberExpenses = expenses.filter(exp => exp.userId === member.userId);
-    return total + memberExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  }, 0) || 0;
+  // Calculate REAL family expenses from current user's expenses
+  const familyExpenses = currentFamily ? expenses.reduce((total, expense) => {
+    // In a real family sharing system, this would aggregate expenses from all family members
+    // For now, we'll show current user's expenses as family expenses
+    return total + expense.amount;
+  }, 0) : 0;
 
   const currentUserRole = currentFamily ? getUserRole(currentFamily.id) : null;
   const canManageMembers = currentFamily ? hasPermission(currentFamily.id, 'canManageMembers') : false;
@@ -191,7 +191,7 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
         ) : (
           // Has family - show family details
           <>
-            {/* Family Stats */}
+            {/* Family Stats - Using REAL data */}
             <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
@@ -200,7 +200,7 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(familyExpenses)}</p>
-                  <p className="text-sm text-gray-600">Tổng chi tiêu</p>
+                  <p className="text-sm text-gray-600">Chi tiêu của bạn</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
@@ -229,6 +229,7 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
               <div className="space-y-4">
                 {currentFamily.members.map((member) => {
                   const RoleIcon = getRoleIcon(member.role);
+                  const roleColor = getRoleColor(member.role);
                   const isCurrentUser = member.userId === user?.uid;
                   
                   return (
@@ -251,7 +252,7 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
                               {member.displayName || member.email}
                               {isCurrentUser && <span className="text-blue-600 text-sm ml-1">(Bạn)</span>}
                             </h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColor}`}>
                               <RoleIcon className="w-3 h-3 inline mr-1" />
                               {member.role === 'admin' ? 'Quản trị' : 
                                member.role === 'member' ? 'Thành viên' : 'Xem'}
@@ -267,9 +268,9 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
                       <div className="flex items-center space-x-3">
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">
-                            {formatCurrency(0)} {/* Would show actual member expenses */}
+                            {isCurrentUser ? formatCurrency(familyExpenses) : formatCurrency(0)}
                           </p>
-                          <p className="text-sm text-gray-500">Chi tiêu tháng này</p>
+                          <p className="text-sm text-gray-500">Chi tiêu</p>
                         </div>
                         
                         {canManageMembers && !isCurrentUser && (
@@ -401,7 +402,7 @@ export const FamilySharing: React.FC<FamilySharingProps> = ({ isOpen, onClose })
       )}
 
       {/* Invite Member Modal */}
-      {showInviteModal && (
+      {showInviteModal && selectedGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

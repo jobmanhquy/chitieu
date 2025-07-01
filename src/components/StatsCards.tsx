@@ -2,7 +2,7 @@ import React from 'react';
 import { TrendingUp, TrendingDown, Calendar, Target } from 'lucide-react';
 import { Expense } from '../types/expense';
 import { formatCurrency } from '../utils/currency';
-import { startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, subMonths } from 'date-fns';
 
 interface StatsCardsProps {
   expenses: Expense[];
@@ -13,16 +13,17 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ expenses }) => {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
+  // Filter expenses for this month
   const thisMonthExpenses = expenses.filter(expense =>
     isWithinInterval(expense.date, { start: monthStart, end: monthEnd })
   );
 
   const totalThisMonth = thisMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const avgPerDay = totalThisMonth / now.getDate();
+  const avgPerDay = thisMonthExpenses.length > 0 ? totalThisMonth / now.getDate() : 0;
   const transactionCount = thisMonthExpenses.length;
 
   // Calculate previous month for comparison
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthStart = subMonths(monthStart, 1);
   const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   
   const prevMonthExpenses = expenses.filter(expense =>
@@ -32,6 +33,9 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ expenses }) => {
   const totalPrevMonth = prevMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const monthlyChange = totalPrevMonth > 0 ? ((totalThisMonth - totalPrevMonth) / totalPrevMonth) * 100 : 0;
 
+  // Calculate total all time
+  const totalAllTime = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
   const stats = [
     {
       title: 'Chi tiêu tháng này',
@@ -39,18 +43,19 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ expenses }) => {
       change: monthlyChange,
       icon: Calendar,
       color: 'blue',
+      subtitle: `${transactionCount} giao dịch`
     },
     {
       title: 'Trung bình/ngày',
       value: formatCurrency(avgPerDay),
-      subtitle: 'Trong tháng',
+      subtitle: 'Tháng này',
       icon: TrendingUp,
       color: 'green',
     },
     {
-      title: 'Số giao dịch',
-      value: transactionCount.toString(),
-      subtitle: 'Tháng này',
+      title: 'Tổng chi tiêu',
+      value: formatCurrency(totalAllTime),
+      subtitle: `${expenses.length} giao dịch`,
       icon: Target,
       color: 'purple',
     },
