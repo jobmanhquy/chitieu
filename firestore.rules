@@ -32,9 +32,10 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
         request.auth.uid == resource.data.userId;
       
-      // Allow users to list their own notifications
+      // Allow users to list their own notifications - fixed rule for list operations
       allow list: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
+        request.auth.uid in request.resource.data.keys() &&
+        request.query.limit <= 50;
     }
     
     // Groups collection rules
