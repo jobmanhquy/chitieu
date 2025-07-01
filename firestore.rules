@@ -20,6 +20,29 @@ service cloud.firestore {
         request.auth.uid in resource.data.userId;
     }
     
+    // Notifications collection rules
+    match /notifications/{notificationId} {
+      // Allow users to read their own notifications
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Allow users to create notifications for themselves
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // Allow users to update their own notifications (e.g., mark as read)
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Allow users to delete their own notifications
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Allow users to list their own notifications
+      allow list: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
     // Groups collection rules
     match /groups/{groupId} {
       // Allow authenticated users to create new groups
