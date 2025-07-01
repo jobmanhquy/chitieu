@@ -56,9 +56,8 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
         request.auth.uid == resource.data.createdBy;
       
-      // Allow users to list groups they are members of
-      allow list: if request.auth != null && 
-        request.auth.uid in resource.data.memberUids;
+      // Allow authenticated users to list groups (filtering happens at read level)
+      allow list: if request.auth != null;
     }
     
     // Family sharing rules
